@@ -1,0 +1,43 @@
+{
+  "name": "website_update_detector",
+  "version": "1.0.0",
+  "description": "web前端主动发现站点发布更新 客户端更新 主动发现更新 发现更新",
+  "private": false,
+  "type": "module",
+  "main": "index.js",
+  "keywords": [
+    "web前端主动发现站点发布更新",
+    " 客户端更新",
+    "主动发现更新",
+    "发现更新"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "rolluplink": "",
+    "rollupbuild": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liyuec/webSite_Update_Detector.git"
+  },
+  "author": "liyuec",
+  "license": "MIT",
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "rollup": "^3.26.2",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-minification": "^0.2.0",
+    "rollup-plugin-postcss": "^4.0.2"
+  },
+  "bugs": {
+    "url": "https://github.com/liyuec/webSite_Update_Detector/issues"
+  },
+  "homepage": "https://github.com/liyuec/webSite_Update_Detector#readme"
+}
