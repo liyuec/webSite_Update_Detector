@@ -3,7 +3,7 @@ import detector from './core/detector'
 const createDetector = (function(){
     let _detector = null;
     return function(){
-        if(_detector != null){
+        if(_detector === null){
            _detector = new detector();
         }
 

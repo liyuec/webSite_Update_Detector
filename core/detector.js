@@ -1,18 +1,25 @@
-import {baseConfig,baseClass} from './config'
+import {baseConfig,baseClass} from './config';
+import {getWorker} from './worker';
 
+
+/**
+ * 暂不考虑不支持webWorker的情况
+ */
 class detector extends baseClass{
     #isStart = false;
-    #webWorker = void 0;
+    #worker = void 0;
 
-    constructor(){
+    constructor(opts){
         super()
         this.#isStart = false;
+        
     }
 
     start(){
         this.#isStart = true;
+        this.#worker = getWorker();
         if(!this.#isStart){
-
+            
         }
     }
 
