@@ -217,6 +217,18 @@ function createWorker(opts){
         console.error('你的浏览器不支持web worker；web worker支持IE10+')
     }
 
+    _worker.addEventListener("message", function (e) {
+        
+    })
+
+    _worker.addEventListener("error", function (e) {
+        
+    })
+
+    _worker.addEventListener("messageerror", function (e) {
+        
+    })
+
     return _worker;
 }
 
