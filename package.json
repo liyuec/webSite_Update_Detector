@@ -5,6 +5,7 @@
   "private": false,
   "type": "module",
   "main": "./dist/index.umd.js",
+  "module": "./dist/index.esm.js",
   "keywords": [
     "web前端主动发现站点发布更新",
     " 客户端更新",
@@ -16,7 +17,7 @@
     "rolluplink": "npm run build:link",
     "rollupbuild": "npm run build:esm",
     "build:esm": "rollup -c ./build/rollup.config.js",
-    "build:link": "rollup -c ./rollup.link.config.js"
+    "build:link": "rollup -c ./build/rollup.link.config.js"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,7 @@
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-node-resolve": "^15.1.0",
     "rollup": "^3.26.2",
+    "rollup-plugin-clear-directory": "^1.0.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-copy": "^3.4.0",
     "rollup-plugin-minification": "^0.2.0",
@@ -42,7 +44,9 @@
     "url": "https://github.com/liyuec/webSite_Update_Detector/issues"
   },
   "homepage": "https://github.com/liyuec/webSite_Update_Detector#readme",
-  "files":["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   }
