@@ -4,7 +4,7 @@
   "description": "web前端主动发现站点发布更新 客户端更新 主动发现更新 发现更新",
   "private": false,
   "type": "module",
-  "main": "index.js",
+  "main": "./dist/index.umd.js",
   "keywords": [
     "web前端主动发现站点发布更新",
     " 客户端更新",
@@ -13,8 +13,10 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "rolluplink": "",
-    "rollupbuild": ""
+    "rolluplink": "npm run build:link",
+    "rollupbuild": "npm run build:esm",
+    "build:esm": "rollup -c ./build/rollup.config.js",
+    "build:link": "rollup -c ./rollup.link.config.js"
   },
   "repository": {
     "type": "git",
@@ -39,5 +41,9 @@
   "bugs": {
     "url": "https://github.com/liyuec/webSite_Update_Detector/issues"
   },
-  "homepage": "https://github.com/liyuec/webSite_Update_Detector#readme"
+  "homepage": "https://github.com/liyuec/webSite_Update_Detector#readme",
+  "files":["dist"],
+  "publishConfig": {
+    "access": "public"
+  }
 }

@@ -178,4 +178,6 @@ const getWorker = (function(){
     }
 })()
 
-export default getWorker
+export {
+    getWorker
+}
