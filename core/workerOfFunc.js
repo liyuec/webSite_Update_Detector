@@ -22,6 +22,12 @@ self.onmessage = function(e){
     }
 
     function extractLinksAndScripts(str) {
+        
+        const regexLinkStr = '<link[^>]+href=[\'"]([^\'"]+\\.(css))[\'"][^>]*>';
+        const regexLink = new RegExp(regexLinkStr, 'g');
+        let match = regexLink.exec(str);
+
+
         const regexLink = /<link[^>]+href=['"]([^'"]+\.(css))['"][^>]*>/g;
         const regexLinkJs = /<link[^>]+href=['"]([^'"]+\.(js))['"][^>]*>/g;
         const regexScript = /<script[^>]+src=['"]([^'"]+\.(js))['"][^>]*><\/script>/g;
@@ -64,7 +70,7 @@ self.onmessage = function(e){
         if(!!timeId){
             suminterval <= maxInterval ? suminterval += intervalAddTime : suminterval;
         }
-        getWebSite.then(res=>{
+        getWebSite().then(res=>{
             let siteObj = extractLinksAndScripts(htmlText),
             diffResult = null;
             if(checkWho.includes('script')){

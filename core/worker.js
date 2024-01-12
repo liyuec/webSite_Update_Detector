@@ -8,6 +8,7 @@ function getWorkerBlobStr(){
         timeId = null,
         suminterval = interval;
     
+        console.log('worker:',e.data)
     
         function getWebSite(){
             return new Promise((r,rj)=>{
