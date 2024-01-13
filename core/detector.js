@@ -32,6 +32,7 @@ function extractLinksAndScripts(){
     return result;
 }
 
+
 /**
  * 暂不考虑不支持webWorker的情况
  */
@@ -61,7 +62,6 @@ class detector extends baseClass{
                 this.#scripts = extractLinksAndScripts();
             }
 
-            console.log('detector:',this)
             this.#worker.postMessage({
                 checkSiteHost:this.checkSiteHost,
                 domSccripts:this.#scripts._script,
@@ -70,10 +70,10 @@ class detector extends baseClass{
                 msg:'start',
                 interval:this.interval,
                 intervalAddTime:this.intervalAddTime,
-                maxInterval:this.maxInterval})
+                maxInterval:this.maxInterval
+              })
         }
     }
-
     stop(){
         this.#isStart = false;
         this.#worker.postMessage({msg:'stop'})

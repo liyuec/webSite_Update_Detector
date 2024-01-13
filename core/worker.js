@@ -24,45 +24,58 @@ function getWorkerBlobStr(){
             })
         }
     
-        function extractLinksAndScripts(str) {
-            str = str.replaceAll('\x3C','<');
-            str = str.replaceAll('async',' ');
-            str = str.replaceAll('defer',' ');
-            const _regexLinkStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(css))[\\'"][^>]*>',
-            _regexLinkJsStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(js))[\\'"][^>]*>',
-            _regexScriptStr = '<script[^>]+src=[\\'"]([^\\']+)[\\']',
-            regexLinkStr = new RegExp(_regexLinkStr, 'g'),
-            regexLinkJsStr = new RegExp(_regexLinkJsStr, 'g'),
-            regexScriptStr = new RegExp(_regexScriptStr, 'g'),
-            matchStr = regexLinkStr.exec(str),
-            matchLinkJsStr = regexLinkJsStr.exec(str),
-            matchScriptStr = regexScriptStr.exec(str),
-            result = {
-              _css: [],
-              _script: []
-            };
+        function extractLinksAndScripts(htmlString) {
+            const css = [];
+            const js = [];
           
-            if(matchStr !== null){
-                matchStr.forEach(i => {
-                    result._css.push(i);
-                });
+            // 提取 CSS 链接
+            let startIndex = 0;
+            while (startIndex < htmlString.length) {
+              const linkStartIndex = htmlString.indexOf('<link', startIndex);
+              if (linkStartIndex === -1) {
+                break;
+              }
+              const hrefStartIndex = htmlString.indexOf('href="', linkStartIndex);
+              if (hrefStartIndex === -1) {
+                break;
+              }
+              const hrefEndIndex = htmlString.indexOf('"', hrefStartIndex + 6);
+              if (hrefEndIndex === -1) {
+                break;
+              }
+              const href = htmlString.substring(hrefStartIndex + 6, hrefEndIndex);
+              if (href.endsWith('.css')) {
+                css.push(href);
+              }
+              if(href.endsWith('.js')){
+                js.push(href);
+              }
+              startIndex = hrefEndIndex + 1;
             }
-    
-            if(matchLinkJsStr !== null){
-                matchLinkJsStr.forEach(i => {
-                    result._script.push(i);
-                });
+          
+            // 提取 JS 链接
+            startIndex = 0;
+            while (startIndex < htmlString.length) {
+              const scriptStartIndex = htmlString.indexOf('<script', startIndex);
+              if (scriptStartIndex === -1) {
+                break;
+              }
+              const srcStartIndex = htmlString.indexOf('src="', scriptStartIndex);
+              if (srcStartIndex === -1) {
+                break;
+              }
+              const srcEndIndex = htmlString.indexOf('"', srcStartIndex + 5);
+              if (srcEndIndex === -1) {
+                break;
+              }
+              const src = htmlString.substring(srcStartIndex + 5, srcEndIndex);
+              if (src.endsWith('.js')) {
+                js.push(src);
+              }
+              startIndex = srcEndIndex + 1;
             }
-    
-            if(matchScriptStr !== null){
-                matchScriptStr.forEach(i => {
-                    if(i !== 'js'){
-                        result._script.push(i);
-                    }
-                });
-            }
-           
-            return result;
+          
+            return { css, js };
         }
     
         function differentValue(arr1, arr2) {
@@ -81,11 +94,20 @@ function getWorkerBlobStr(){
     
         function start(){
             if(!!timeId){
-                suminterval <= maxInterval ? suminterval += intervalAddTime : suminterval;
+                suminterval = suminterval <= maxInterval ? suminterval += intervalAddTime : suminterval;
             }
             getWebSite().then(res=>{
-                let siteObj = extractLinksAndScripts(htmlText),
-                diffResult = null;
+                let extractObj = extractLinksAndScripts(htmlText),
+                diffResult = null,
+                siteObj = {
+                    _script:[],
+                    _css:[]
+                };
+    
+                siteObj._script = extractObj.js;
+                siteObj._css = extractObj.css;
+    
+    
                 if(checkWho.includes('script')){
                     diffResult = differentValue(domSccripts,siteObj._script);
                     if(diffResult !== null){
@@ -113,6 +135,7 @@ function getWorkerBlobStr(){
                         update:0,
                         msg:'no_file_update'
                     })
+                    start();
                 },suminterval)
                 
             }).catch(err=>{
@@ -158,14 +181,23 @@ function createWorker(opts){
         let {update,msg} = e.data;
         switch(update){
             case -1:
-                callBack(msg)
+                callBack({
+                    update:update,
+                    msg:msg
+                })
             break;
             case 0:
-                callBack(msg)
+                callBack({
+                    update:update,
+                    msg:msg
+                })
             break;
             case 1:
             //有不一致的情况；
-                callBack(msg)
+                callBack({
+                    update:update,
+                    msg:msg
+                })
             break;
         }
     })
