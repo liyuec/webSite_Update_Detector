@@ -8,7 +8,6 @@ function getWorkerBlobStr(){
         timeId = null,
         suminterval = interval;
     
-        console.log('worker:',e.data)
     
         function getWebSite(){
             return new Promise((r,rj)=>{
@@ -26,27 +25,43 @@ function getWorkerBlobStr(){
         }
     
         function extractLinksAndScripts(str) {
-            const regexLink = /<link[^>]+href=['"]([^'"]+\.(css))['"][^>]*>/g;
-            const regexLinkJs = /<link[^>]+href=['"]([^'"]+\.(js))['"][^>]*>/g;
-            const regexScript = /<script[^>]+src=['"]([^'"]+\.(js))['"][^>]*><\/script>/g;
-            const result = {
+            str = str.replaceAll('\x3C','<');
+            str = str.replaceAll('async',' ');
+            str = str.replaceAll('defer',' ');
+            const _regexLinkStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(css))[\\'"][^>]*>',
+            _regexLinkJsStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(js))[\\'"][^>]*>',
+            _regexScriptStr = '<script[^>]+src=[\\'"]([^\\']+)[\\']',
+            regexLinkStr = new RegExp(_regexLinkStr, 'g'),
+            regexLinkJsStr = new RegExp(_regexLinkJsStr, 'g'),
+            regexScriptStr = new RegExp(_regexScriptStr, 'g'),
+            matchStr = regexLinkStr.exec(str),
+            matchLinkJsStr = regexLinkJsStr.exec(str),
+            matchScriptStr = regexScriptStr.exec(str),
+            result = {
               _css: [],
               _script: []
             };
           
-            let match;
-            while ((match = regexLink.exec(str))) {
-              result._css.push(match[1]);
+            if(matchStr !== null){
+                matchStr.forEach(i => {
+                    result._css.push(i);
+                });
             }
-          
-            while ((match = regexScript.exec(str))) {
-              result._script.push(match[1]);
+    
+            if(matchLinkJsStr !== null){
+                matchLinkJsStr.forEach(i => {
+                    result._script.push(i);
+                });
             }
-            
-            while ((match = regexLinkJs.exec(str))) {
-              result._script.push(match[1]);
+    
+            if(matchScriptStr !== null){
+                matchScriptStr.forEach(i => {
+                    if(i !== 'js'){
+                        result._script.push(i);
+                    }
+                });
             }
-          
+           
             return result;
         }
     
@@ -68,7 +83,7 @@ function getWorkerBlobStr(){
             if(!!timeId){
                 suminterval <= maxInterval ? suminterval += intervalAddTime : suminterval;
             }
-            getWebSite.then(res=>{
+            getWebSite().then(res=>{
                 let siteObj = extractLinksAndScripts(htmlText),
                 diffResult = null;
                 if(checkWho.includes('script')){
@@ -103,7 +118,7 @@ function getWorkerBlobStr(){
             }).catch(err=>{
                 self.postMessage({
                     update:-1,
-                    msg:'no_file_update'
+                    msg:'error:' + err
                 })
             })
         }
@@ -116,6 +131,7 @@ function getWorkerBlobStr(){
                 clearTimeout(timeId);
             break;
         }
+       
        
     }
     `,
@@ -139,7 +155,7 @@ function createWorker(opts){
     }
 
     _worker.addEventListener("message", function (e) {
-        let {update,msg} = e;
+        let {update,msg} = e.data;
         switch(update){
             case -1:
                 callBack(msg)

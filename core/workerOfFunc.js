@@ -1,3 +1,9 @@
+/*
+    const _regexLinkStr = '<link[^>]+href=[\'"]([^\'"]+\\.(css))[\'"][^>]*>',
+    _regexLinkJsStr = '<link[^>]+href=[\'"]([^\'"]+\\.(js))[\'"][^>]*>',
+    _regexScriptStr = '<script[^>]+src=[\'"]([^"\']+)["\']';
+                   
+*/
 self.onmessage = function(e){
     let {checkSiteHost,domSccripts,domCsss,checkWho,msg,interval,intervalAddTime,maxInterval} = e.data,
     htmlText = '',
@@ -22,33 +28,46 @@ self.onmessage = function(e){
     }
 
     function extractLinksAndScripts(str) {
-        
-        const regexLinkStr = '<link[^>]+href=[\'"]([^\'"]+\\.(css))[\'"][^>]*>';
-        const regexLink = new RegExp(regexLinkStr, 'g');
-        let match = regexLink.exec(str);
+        str = str.replaceAll('\x3C','<');
+        str = str.replaceAll('async',' ');
+        str = str.replaceAll('defer',' ');
+        const _regexLinkStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(css))[\\'"][^>]*>',
+        _regexLinkJsStr = '<link[^>]+href=[\\'"]([^\\'"]+\\\\.(js))[\\'"][^>]*>',
 
+                          '<script[^>]+src=[\\'"]([^\']+)["\']'
+        _regexScriptStr = '<script[^>]+src=[\\'"]([^\\']+)[\\']',
 
-        const regexLink = /<link[^>]+href=['"]([^'"]+\.(css))['"][^>]*>/g;
-        const regexLinkJs = /<link[^>]+href=['"]([^'"]+\.(js))['"][^>]*>/g;
-        const regexScript = /<script[^>]+src=['"]([^'"]+\.(js))['"][^>]*><\/script>/g;
-        const result = {
+        regexLinkStr = new RegExp(_regexLinkStr, 'g'),
+        regexLinkJsStr = new RegExp(_regexLinkJsStr, 'g'),
+        regexScriptStr = new RegExp(_regexScriptStr, 'g'),
+        matchStr = regexLinkStr.exec(str),
+        matchLinkJsStr = regexLinkJsStr.exec(str),
+        matchScriptStr = regexScriptStr.exec(str),
+        result = {
           _css: [],
           _script: []
         };
       
-        let match;
-        while ((match = regexLink.exec(str))) {
-          result._css.push(match[1]);
+        if(matchStr !== null){
+            matchStr.forEach(i => {
+                result._css.push(i);
+            });
         }
-      
-        while ((match = regexScript.exec(str))) {
-          result._script.push(match[1]);
+
+        if(matchLinkJsStr !== null){
+            matchLinkJsStr.forEach(i => {
+                result._script.push(i);
+            });
         }
-        
-        while ((match = regexLinkJs.exec(str))) {
-          result._script.push(match[1]);
+
+        if(matchScriptStr !== null){
+            matchScriptStr.forEach(i => {
+                if(i !== 'js'){
+                    result._script.push(i);
+                }
+            });
         }
-      
+       
         return result;
     }
 
@@ -105,7 +124,7 @@ self.onmessage = function(e){
         }).catch(err=>{
             self.postMessage({
                 update:-1,
-                msg:`error:${err}`
+                msg:'error:' + err
             })
         })
     }

@@ -41,7 +41,7 @@ class detector extends baseClass{
     #scripts = null;
 
     constructor(opts){
-        super()
+        super(opts)
         this.#isStart = false;
         this.callBack = opts.callBack;
     }
