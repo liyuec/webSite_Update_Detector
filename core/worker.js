@@ -11,7 +11,8 @@ function getWorkerBlobStr(){
     
         function getWebSite(){
             return new Promise((r,rj)=>{
-                fetch(checkSiteHost).then(res=>{
+                let _checkSiteHost = checkSiteHost + '?timekey=' + new Date().getTime();
+                fetch(_checkSiteHost).then(res=>{
                     return res.text();
                 }).then(_htmlText =>{
                     htmlText = _htmlText;
