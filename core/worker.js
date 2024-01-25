@@ -159,7 +159,7 @@ function getWorkerBlobStr(){
        
     }
     `,
-    _blob = new Blob([js]);
+    _blob = new Blob([js],{ type: 'application/javascript' });
 
     return window.URL.createObjectURL(_blob);
 }
