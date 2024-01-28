@@ -1,4 +1,4 @@
-import {baseConfig,baseClass} from './config';
+import {baseConfig,baseClass,channelName,channelMsg} from './config';
 import {getWorker} from './worker';
 
 function extractLinksAndScripts(){
@@ -33,6 +33,25 @@ function extractLinksAndScripts(){
 }
 
 
+function getChannel(){
+    const _channnel = new BroadcastChannel(channelName);
+    _channnel.onmessage = function(_messageEvent){
+      let {msg} = _messageEvent.data;
+      switch(msg){
+        case channelMsg.begin:
+
+        break;
+      }
+    }
+
+    _channnel.postMessage({
+      msg:channelMsg.begin
+    })
+
+    return _channnel;
+}
+
+
 /**
  * 暂不考虑不支持webWorker的情况
  */
@@ -40,6 +59,7 @@ class detector extends baseClass{
     #isStart = false;
     #worker = void 0;
     #scripts = null;
+    #channel = null;
 
     constructor(opts){
         super(opts)
@@ -60,6 +80,10 @@ class detector extends baseClass{
             });
             if(this.#scripts === null){
                 this.#scripts = extractLinksAndScripts();
+            }
+
+            if(this.#channel === null){
+              this.#channel = getChannel();
             }
 
             this.#worker.postMessage({

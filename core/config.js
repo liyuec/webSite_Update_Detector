@@ -27,7 +27,15 @@ class baseClass{
 }
 
 
+const channelName = 'webUpdateDetector'
+const channelMsg = {
+    //开始
+    begin:channelName + ':begin'
+}
+
 export {
     baseConfig,
-    baseClass
+    baseClass,
+    channelName,
+    channelMsg
 }
