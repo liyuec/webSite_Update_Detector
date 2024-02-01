@@ -1,4 +1,4 @@
-import {baseConfig,baseClass,channelName,channelMsg} from './config';
+import {baseConfig,baseClass,channelName,channelMsg,localEnum} from './config';
 import {getWorker} from './worker';
 
 function extractLinksAndScripts(){
@@ -38,19 +38,57 @@ function getChannel(){
     _channnel.onmessage = function(_messageEvent){
       let {msg} = _messageEvent.data;
       switch(msg){
+        //其他tab已经有请求了
         case channelMsg.begin:
-
         break;
       }
     }
 
-    _channnel.postMessage({
+   /*  _channnel.postMessage({
       msg:channelMsg.begin
     })
-
+ */
     return _channnel;
 }
 
+function localStorage(){
+  const key = localEnum.detectorName;
+  return {
+    /*
+      true:   已经有tab在请求了，暂时不请求
+      false:  表示没有其他tab在请求，当前tab可以请求
+    */
+    checkDetector(){
+      const detector = localStorage.getItem(key),
+      result = !1;
+      if(detector === null){
+        return result;
+      }
+
+      try{
+        detector = JSON.parse(detector);
+        if(Date.now() - detector.tick > 10000){
+          result = !0;
+        }
+      }catch(e){
+        console.warn(e)
+      }finally{
+        return result;
+      }
+      
+    },
+    setDetector(masterTick){
+      let res = {
+        tick:Date.now(),
+        master:masterTick
+      }
+      localStorage.setItem(key,Date.now());
+      setTimeout(()=>{
+        requestIdleCallback(localStorage().setDetector(masterTick))
+      },2000);
+    }
+  }
+}
 
 /**
  * 暂不考虑不支持webWorker的情况
@@ -86,7 +124,12 @@ class detector extends baseClass{
               this.#channel = getChannel();
             }
 
-            this.#worker.postMessage({
+            if(localStorage().checkDetector()){
+              this.#channel.postMessage({
+                msg:channelMsg.begin
+              });
+              
+              this.#worker.postMessage({
                 checkSiteHost:this.checkSiteHost,
                 domSccripts:this.#scripts._script,
                 domCsss:this.#scripts._css,
@@ -96,6 +139,7 @@ class detector extends baseClass{
                 intervalAddTime:this.intervalAddTime,
                 maxInterval:this.maxInterval
               })
+            }
         }
     }
     stop(){

@@ -33,9 +33,14 @@ const channelMsg = {
     begin:channelName + ':begin'
 }
 
+const localEnum = {
+    detectorName:'localDetector'
+}
+
 export {
     baseConfig,
     baseClass,
     channelName,
-    channelMsg
+    channelMsg,
+    localEnum
 }
