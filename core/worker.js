@@ -1,4 +1,4 @@
-
+import {channelMsg,localEnum} from './config';
 function getWorkerBlobStr(){
     let js = `
     self.onmessage = function(e){
@@ -165,8 +165,9 @@ function getWorkerBlobStr(){
 }
 
 function createWorker(opts){
-    let _worker = Object.create(null),
-    callBack = opts.callBack;
+    const _worker = Object.create(null),
+    callBack = opts.callBack,
+    channel = opts.channel;
 
     if(window.Worker){
         _worker = new Worker(getWorkerBlobStr(),{
@@ -182,6 +183,7 @@ function createWorker(opts){
         let {update,msg} = e.data;
         switch(update){
             case -1:
+                channel.postMessage(channelMsg.upgradation)
                 callBack({
                     update:update,
                     msg:msg

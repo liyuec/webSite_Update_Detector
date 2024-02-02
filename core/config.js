@@ -30,17 +30,25 @@ class baseClass{
 const channelName = 'webUpdateDetector'
 const channelMsg = {
     //开始
-    begin:channelName + ':begin'
+    begin:channelName + ':begin',
+    upgradation:channelName + ":upgradation"
 }
 
 const localEnum = {
     detectorName:'localDetector'
 }
 
+
+const interval = 2000;
+const expireInterval = 5000;
+
+
 export {
     baseConfig,
     baseClass,
     channelName,
     channelMsg,
-    localEnum
+    localEnum,
+    interval,
+    expireInterval
 }
