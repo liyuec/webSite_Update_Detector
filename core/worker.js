@@ -11,7 +11,7 @@ function getWorkerBlobStr(){
     
         function getWebSite(){
             return new Promise((r,rj)=>{
-                let _checkSiteHost = checkSiteHost + '?timekey=' + new Date().getTime();
+                let _checkSiteHost = checkSiteHost + '?timekey=' + new Date().getTime()
                 fetch(_checkSiteHost).then(res=>{
                     return res.text();
                 }).then(_htmlText =>{
@@ -93,10 +93,79 @@ function getWorkerBlobStr(){
         }
     
     
+        const channelName = 'webUpdateDetector'
+        const channelMsg = {
+            //开始
+            begin:channelName + ':begin',
+            script_diff:channelName + ':script_diff',
+            css_diff:channelName + ':css_diff',
+            no_file_update:channelName + ':no_file_update',
+            error:channelName + ':error'
+        }
+    
+        const expireInterval = 4500;
+        let SlaveTimerId = null;
+        let setIntervalId = null;
+        function getChannel(opts){
+            const _channnel = new BroadcastChannel(channelName);
+    
+            _channnel.onmessage = function(_messageEvent){
+              let {msg} = _messageEvent.data;
+              console.log('BroadcastChannel onmessage:',msg)
+              switch(msg){
+                //其他tab已经有请求了
+                case channelMsg.begin:
+                  clearTimeout(SlaveTimerId);
+                  clearInterval(setIntervalId);
+                  SlaveTimerId = setTimeout(() => {
+                    start();
+                  }, expireInterval);
+                break;
+                case channelMsg.script_diff:
+                  self.postMessage({
+                    update:1,
+                    msg:'script_diff'
+                  })
+                break;
+                case channelMsg.css_diff:
+                  self.postMessage({
+                      update:1,
+                      msg:'css_diff'
+                  })
+                break;
+                case channelMsg.no_file_update:
+                  self.postMessage({
+                    update:0,
+                    msg:'no_file_update'
+                  })
+                break;
+                case channelMsg.error:
+                  self.postMessage({
+                    update:-1,
+                    msg:'error:' + err
+                  })
+                break;
+              }
+            }
+            return _channnel;
+        }
+    
+        var _channel = getChannel();
+    
+        function sendChannel(){
+          setIntervalId = setInterval(()=>{
+            _channel.postMessage({
+              msg:channelMsg.begin
+            })
+          },1000);
+        }
         function start(){
             if(!!timeId){
                 suminterval = suminterval <= maxInterval ? suminterval += intervalAddTime : suminterval;
             }
+    
+            sendChannel();
+    
             getWebSite().then(res=>{
                 let extractObj = extractLinksAndScripts(htmlText),
                 diffResult = null,
@@ -112,6 +181,9 @@ function getWorkerBlobStr(){
                 if(checkWho.includes('script')){
                     diffResult = differentValue(domSccripts,siteObj._script);
                     if(diffResult !== null){
+                        _channel.postMessage({
+                          msg:channelMsg.script_diff
+                        })
                         self.postMessage({
                             update:1,
                             msg:'script_diff'
@@ -123,6 +195,9 @@ function getWorkerBlobStr(){
                 if(checkWho.includes('css')){
                     diffResult = differentValue(domCsss,siteObj._css);
                     if(diffResult !== null){
+                        _channel.postMessage({
+                          msg:channelMsg.css_diff
+                        })
                         self.postMessage({
                             update:1,
                             msg:'css_diff'
@@ -132,6 +207,9 @@ function getWorkerBlobStr(){
                 }
         
                 timeId = setTimeout(()=>{
+                    _channel.postMessage({
+                      msg:channelMsg.no_file_update
+                    })
                     self.postMessage({
                         update:0,
                         msg:'no_file_update'
@@ -140,6 +218,9 @@ function getWorkerBlobStr(){
                 },suminterval)
                 
             }).catch(err=>{
+                _channel.postMessage({
+                  msg:channelMsg.error
+                })
                 self.postMessage({
                     update:-1,
                     msg:'error:' + err
@@ -149,11 +230,24 @@ function getWorkerBlobStr(){
         
         switch(msg){
             case 'start':
-                start();
+              //这里直接频道判断，因为浏览器不会保存之前的消息；
+             /*  setIntervalId = setInterval(()=>{
+                _channel.postMessage({
+                  msg:channelMsg.begin
+                })
+              },1000); */
+              SlaveTimerId = setTimeout(()=>{
+                  start();
+              },expireInterval)
+                //start();
             break;
             case 'stop':
                 clearTimeout(timeId);
             break;
+            case 'beforeunload':
+                clearInterval(setIntervalId);
+                _channel.close();
+              break;
         }
        
        

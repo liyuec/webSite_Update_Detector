@@ -1,6 +1,6 @@
 {
   "name": "website_update_detector",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "web前端主动发现站点发布更新 客户端更新 主动发现更新 发现更新",
   "private": false,
   "type": "module",
