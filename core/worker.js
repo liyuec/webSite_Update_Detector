@@ -165,7 +165,7 @@ function getWorkerBlobStr(){
 }
 
 function createWorker(opts){
-    const _worker = Object.create(null),
+    let _worker = Object.create(null),
     callBack = opts.callBack,
     channel = opts.channel;
 

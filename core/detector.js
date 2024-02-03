@@ -41,6 +41,7 @@ function getChannel(opts){
 
     _channnel.onmessage = function(_messageEvent){
       let {msg} = _messageEvent.data;
+      console.log('BroadcastChannel onmessage:',msg)
       switch(msg){
         //其他tab已经有请求了
         case channelMsg.begin:
@@ -62,24 +63,107 @@ function getChannel(opts){
     return _channnel;
 }
 
-function localStorage(){
+function _localStorage(){
   const key = localEnum.detectorName;
+  
+  function _masterAndSlave(masterTick){
+    let master = localStorage.getItem(key),
+    slave = sessionStorage.getItem(key),
+    isCanStart = !0;
+
+    if(slave === null){
+      if(master === null){
+        //都是空，那么是第一次开，之前也没用过，应该作为master进行请求
+        slave = masterTick;
+        master = masterTick;
+  
+        let res = {
+          tick:Date.now(),
+          master: master
+        }
+        sessionStorage.setItem(key,slave)
+        localStorage.setItem(key,JSON.stringify(res));
+      }else{
+        //master有值，可能是新开tab，判断一下是否启动；
+        
+      }
+    }else{
+      //slave 有值
+    }
+
+    //第一次用，第一次来
+    if(slave === null && master === null){
+      slave = masterTick;
+      master = masterTick;
+
+      let res = {
+        tick:Date.now(),
+        master: master
+      }
+      sessionStorage.setItem(key,slave)
+      localStorage.setItem(key,JSON.stringify(res));
+    }
+    //之前可能有tab，当前情况是新开的tab
+    else if(slave === null && master !== null){
+      slave = masterTick;
+      sessionStorage.setItem(key,slave);
+      master = JSON.parse(master);
+
+      //判断是否是自己    不是当前tab做的Master
+      if(slave === master.master){
+          isCanStart = !1;
+        }else{
+          if(Date.now() - master.tick > expireInterval){
+            let res = {
+              tick:Date.now(),
+              master: slave
+            }
+            localStorage.setItem(key,JSON.stringify(res));
+          }
+      }
+    } 
+    //当前tab或则新Tab刷新 自己刷新
+    else if(slave !== null && master !== null){
+      master = JSON.parse(master);
+    }
+    else if(slave !== null && master === null){
+
+    }
+
+    return {
+      master:master,
+      slave:slave,
+      /*
+        true:   表示没有其他tab在请求，当前tab可以请求
+        false:  已经有tab在请求了，暂时不请求,只做监听
+      */
+      isCanStart:isCanStart
+    }
+  }
   return {
     /*
-      true:   已经有tab在请求了，暂时不请求
-      false:  表示没有其他tab在请求，当前tab可以请求
+      true:   表示没有其他tab在请求，当前tab可以请求
+      false:  已经有tab在请求了，暂时不请求,只做监听
     */
     checkDetector(){
-      const detector = localStorage.getItem(key),
-      result = !1;
+      let detector = localStorage.getItem(key),
+      result = !0,
+      master = null;
+
+      master = sessionStorage.getItem(detector);
+
       if(detector === null){
         return result;
       }
 
       try{
-        detector = JSON.parse(detector);
-        if(Date.now() - detector.tick > expireInterval){
+        let detectorJson = JSON.parse(detector);
+        if(Date.now() - detectorJson.tick > expireInterval){
           result = !0;
+        }else{
+          if(master === detectorJson.master){
+            result = !1;
+          }
         }
       }catch(e){
         console.warn(e)
@@ -89,13 +173,22 @@ function localStorage(){
       
     },
     setDetector(masterTick){
+      //master设置逻辑
+      let _mePk = sessionStorage.getItem(key);
+      if(_mePk === null){
+        sessionStorage.setItem(key,masterTick)
+        _mePk = masterTick;
+      }
+
+      let master = 
+      
       let res = {
         tick:Date.now(),
-        master:masterTick
+        master:!!_master ? _master : masterTick
       }
-      localStorage.setItem(key,Date.now());
+      localStorage.setItem(key,JSON.stringify(res));
       setTimeout(()=>{
-        requestIdleCallback(localStorage().setDetector(masterTick))
+          _localStorage().setDetector(masterTick)
       },interval);
     }
   }
@@ -117,31 +210,30 @@ class detector extends baseClass{
     }
 
     start(){
-        if(document.readyState !== 'completes'){
+        if(document.readyState !== 'complete'){
             setTimeout(()=>{
               this.start()
             },interval);
+            return;
         }
         if(!this.#isStart){
             this.#isStart = true;
-            if(localStorage().checkDetector()){
 
-              if(this.#channel === null){
-                this.#channel = getChannel({
-                  callBack:this.callBack
-                });
-              }
+            if(this.#channel === null){
+              this.#channel = getChannel({
+                callBack:this.callBack
+              });
+            }
 
-              setTimeout(()=>{
-                requestIdleCallback(()=>{
+            if(_localStorage().checkDetector()){
+              setInterval(()=>{
                   this.#channel.postMessage({
                     msg:channelMsg.begin
                   });
-                })
               },interval)
               
               
-              localStorage().setDetector(Date.now());
+              _localStorage().setDetector(Date.now());
 
               this.#worker = getWorker({
                 callBack:this.callBack,

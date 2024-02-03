@@ -40,7 +40,7 @@ const localEnum = {
 
 
 const interval = 2000;
-const expireInterval = 5000;
+const expireInterval = 4500;
 
 
 export {
