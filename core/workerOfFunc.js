@@ -3,7 +3,17 @@ self.onmessage = function(e){
     htmlText = '',
     errText = '',
     timeId = null,
-    suminterval = interval;
+    suminterval = interval,
+    sendChannelIntervalId = null;
+
+    let expireInterval = 3000,
+    myStartTimeInterval = 4000,
+    /**
+     * channelIntervals
+     * expireTime
+     */
+    otherChannelIntervals = [];
+
 
 
     function getWebSite(){
@@ -89,34 +99,104 @@ self.onmessage = function(e){
         return null;
     }
 
+    /*
+      调整自己的myStartTimeInterval；
+      以便主tab挂了或则关闭，其他tab 只会启动单个请求
+      只change自己一次
+    */
+    let isMyChange = false;
+    function myStartTimeIntervalChange(){
+      if(isMyChange){
+        return;
+      }
+      let _myStartTimeInterval = myStartTimeInterval,
+      {result,min,max} = getChannelIntervals();
+
+      if(result.includes(_myStartTimeInterval)){
+        if(min - 500 >= expireInterval){
+          _myStartTimeInterval = min + 500;
+        }else{
+          _myStartTimeInterval = max + 500;
+        }
+      }
+      
+      isMyChange = true;
+      myStartTimeInterval = _myStartTimeInterval;
+    }
+
+    function setChannelIntervals(channelIntervals,expireTime){
+      otherChannelIntervals.push({
+        channelIntervals:channelIntervals,
+        expireTime:expireTime
+      });
+    }
+
+    /**
+     * 超过3秒没更新，算过期，因为每秒都要广播；
+     */
+    function getChannelIntervals(){
+      let _otherChannelIntervals = otherChannelIntervals,
+      res = [],
+      min = void 0,
+      max = void 0,
+      result = [],
+      now = Date.now();
+
+      _otherChannelIntervals.forEach(i=>{
+        if(now - i.expireTime <= 3000){
+          res.push(i)
+          result.push(i.channelIntervals)
+        }
+      })
+
+      otherChannelIntervals = JSON.parse(JSON.stringify(res));
+
+      min = Math.min(...result);
+      max = Math.max(...result);
+      return {
+        result,
+        min,
+        max
+      }
+    }
 
     const channelName = 'webUpdateDetector'
     const channelMsg = {
         //开始
         begin:channelName + ':begin',
+        interval:channelName + ':interval',
         script_diff:channelName + ':script_diff',
         css_diff:channelName + ':css_diff',
         no_file_update:channelName + ':no_file_update',
         error:channelName + ':error'
     }
 
-    const expireInterval = 4500;
+    var _channel = getChannel();
+   
     let SlaveTimerId = null;
     let setIntervalId = null;
     function getChannel(opts){
         const _channnel = new BroadcastChannel(channelName);
 
         _channnel.onmessage = function(_messageEvent){
-          let {msg} = _messageEvent.data;
-          console.log('BroadcastChannel onmessage:',msg)
+          let {msg,channelIntervals,expireTime} = _messageEvent.data;
+          console.log(msg,channelIntervals,expireTime)
           switch(msg){
             //其他tab已经有请求了
             case channelMsg.begin:
               clearTimeout(SlaveTimerId);
               clearInterval(setIntervalId);
+              setChannelIntervals(channelIntervals,expireTime);
+              myStartTimeIntervalChange();
               SlaveTimerId = setTimeout(() => {
                 start();
-              }, expireInterval);
+              }, myStartTimeInterval);
+            break;
+            //记录其他channel的存活情况；
+            case channelMsg.interval:
+              setChannelIntervals(channelIntervals,expireTime);
+              myStartTimeIntervalChange();
+              sendChannelInterval(true);
             break;
             case channelMsg.script_diff:
               self.postMessage({
@@ -147,14 +227,33 @@ self.onmessage = function(e){
         return _channnel;
     }
 
-    var _channel = getChannel();
+    function sendChannelInterval(isInterval = false){
+      function send(){
+        _channel.postMessage({
+          msg:channelMsg.interval,
+          channelIntervals:myStartTimeInterval,
+          expireTime:Date.now()
+        })
+      }
+      if(isInterval){
+        sendChannelIntervalId = setInterval(()=>{
+          send();
+        },2000);
+      }else{
+        send();
+      }
+
+    }
 
     function sendChannel(){
+      sendChannelInterval();
       setIntervalId = setInterval(()=>{
         _channel.postMessage({
-          msg:channelMsg.begin
+          msg:channelMsg.begin,
+          channelIntervals:myStartTimeInterval,
+          expireTime:Date.now()
         })
-      },1000);
+      },2000);
     }
     function start(){
         if(!!timeId){
@@ -225,6 +324,9 @@ self.onmessage = function(e){
         })
     }
     
+
+
+
     switch(msg){
         case 'start':
           //这里直接频道判断，因为浏览器不会保存之前的消息；
