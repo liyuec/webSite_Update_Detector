@@ -112,26 +112,47 @@ function getWorkerBlobStr(){
         if(isMyChange){
           return;
         }
+  
+       
+  
         let _myStartTimeInterval = myStartTimeInterval,
         {result,min,max} = getChannelIntervals();
   
+        //console.error('我的 _myStartTimeInterval:',_myStartTimeInterval,result.toString());
+  
         if(result.includes(_myStartTimeInterval)){
-          if(min - 500 >= expireInterval){
+          /* if(min - 500 >= expireInterval){
             _myStartTimeInterval = min + 500;
           }else{
             _myStartTimeInterval = max + 500;
-          }
+          } */
+          _myStartTimeInterval = max + 500;
         }
         
         isMyChange = true;
+        //console.error('替换后的 _myStartTimeInterval:',_myStartTimeInterval,result.toString())
         myStartTimeInterval = _myStartTimeInterval;
+        sendChannelInterval();
       }
   
-      function setChannelIntervals(channelIntervals,expireTime){
-        otherChannelIntervals.push({
-          channelIntervals:channelIntervals,
-          expireTime:expireTime
-        });
+      function setChannelIntervals(channelIntervals,expireTime,type){
+        if(type === channelMsg.begin){
+          otherChannelIntervals = [];
+        }
+        //console.log('otherChannelIntervals length:',otherChannelIntervals.length)
+        if(Object.prototype.toString.call(channelIntervals).slice(8,-1) === 'Array'){
+          channelIntervals.forEach(i=>{
+            otherChannelIntervals.push({
+              channelIntervals:i.channelIntervals,
+              expireTime:i.expireTime
+            });
+          })
+        }else{
+          otherChannelIntervals.push({
+            channelIntervals:channelIntervals,
+            expireTime:expireTime
+          });
+        }
       }
   
       /**
@@ -146,10 +167,10 @@ function getWorkerBlobStr(){
         now = Date.now();
   
         _otherChannelIntervals.forEach(i=>{
-          if(now - i.expireTime <= 3000){
+          //if(now - i.expireTime <= 3000){
             res.push(i)
             result.push(i.channelIntervals)
-          }
+          //}
         })
   
         otherChannelIntervals = JSON.parse(JSON.stringify(res));
@@ -183,23 +204,24 @@ function getWorkerBlobStr(){
   
           _channnel.onmessage = function(_messageEvent){
             let {msg,channelIntervals,expireTime} = _messageEvent.data;
-            console.log(msg,channelIntervals,expireTime)
+            
             switch(msg){
               //其他tab已经有请求了
               case channelMsg.begin:
                 clearTimeout(SlaveTimerId);
                 clearInterval(setIntervalId);
-                setChannelIntervals(channelIntervals,expireTime);
+                setChannelIntervals(channelIntervals,expireTime,channelMsg.begin);
                 myStartTimeIntervalChange();
                 SlaveTimerId = setTimeout(() => {
                   start();
                 }, myStartTimeInterval);
+                //console.log('其他tab已经有请求了:',myStartTimeInterval,msg,channelIntervals,expireTime,otherChannelIntervals)
               break;
               //记录其他channel的存活情况；
               case channelMsg.interval:
-                setChannelIntervals(channelIntervals,expireTime);
+                setChannelIntervals(channelIntervals,expireTime,channelMsg.interval);
                 myStartTimeIntervalChange();
-                sendChannelInterval(true);
+                //console.log('记录其他channel的存活情况:',myStartTimeInterval,msg,channelIntervals,expireTime,otherChannelIntervals)
               break;
               case channelMsg.script_diff:
                 self.postMessage({
@@ -234,6 +256,7 @@ function getWorkerBlobStr(){
         function send(){
           _channel.postMessage({
             msg:channelMsg.interval,
+            //channelIntervals:otherChannelIntervals.length > 0 ? otherChannelIntervals : myStartTimeInterval,
             channelIntervals:myStartTimeInterval,
             expireTime:Date.now()
           })
@@ -248,15 +271,23 @@ function getWorkerBlobStr(){
   
       }
   
+      let isSendChannel = false;
       function sendChannel(){
-        sendChannelInterval();
-        setIntervalId = setInterval(()=>{
+        function send(){
+          
           _channel.postMessage({
             msg:channelMsg.begin,
-            channelIntervals:myStartTimeInterval,
+            channelIntervals:otherChannelIntervals.length > 0 ? otherChannelIntervals : myStartTimeInterval,
             expireTime:Date.now()
           })
-        },2000);
+          setTimeout(send,2000)
+        }
+        if(!isSendChannel){
+          send();
+        }
+       /*  setIntervalId = setInterval(()=>{
+          send();
+        },2000); */
       }
       function start(){
           if(!!timeId){
@@ -352,7 +383,6 @@ function getWorkerBlobStr(){
             break;
       }
      
-     
   }
     `,
     _blob = new Blob([js],{ type: 'application/javascript' });
@@ -366,11 +396,19 @@ function createWorker(opts){
     channel = opts.channel;
 
     if(window.Worker){
+       
         _worker = new Worker(getWorkerBlobStr(),{
             type:'classic',
             credentials:'omit',
             name:'webDetectorWorker'
         })
+        /*
+        let workerUri = new URL('./workerOfFunc.js',import.meta.url)
+         _worker = new Worker(workerUri.toString(),{
+          type:'classic',
+          credentials:'omit',
+          name:'webDetectorWorker'
+      }) */
     }else{
         console.error('你的浏览器不支持web worker；web worker支持IE10+')
     }
